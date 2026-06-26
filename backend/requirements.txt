@@ -1,8 +1,12 @@
 fastapi
 uvicorn
-mistralai
-python-dotenv
+mistralai>=1.0.0
 supabase
+python-dotenv
+pypdf
 pdfplumber
-pydantic
+reportlab
+google-auth-oauthlib
+google-api-python-client
+requests
 python-multipart
