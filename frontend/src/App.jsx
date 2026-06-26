@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+
 import axios from 'axios';
 import { supabase } from './supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,7 +7,7 @@ import {
   Send, Bot, User, LogOut, Plus, Mail, 
   FileUp, Sparkles, MessageSquare, Moon, Zap
 } from 'lucide-react';
-
+const API_URL = "https://email-agent-backend-61o1.onrender.com";
 function App() {
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState('');
@@ -103,7 +104,7 @@ function App() {
 
     setUploading(true);
     try {
-      await axios.post('http://127.0.0.1:8000/api/v1/profile/upload-resume', formData);
+      await axios.post(`${API_URL}/api/v1/profile/upload-resume`, formData);
       alert("✅ Resume Parsed Successfully!");
     } catch (error) { alert("❌ Upload failed."); }
     setUploading(false);
@@ -111,7 +112,7 @@ function App() {
 
   const handleGoogleLogin = async () => {
     try {
-      const res = await axios.get(`http://127.0.0.1:8000/api/v1/actions/login-google?user_id=${user.id}`);
+      const res = await axios.get(`${API_URL}/api/v1/actions/login-google?user_id=${user.id}`);
       window.open(res.data.url, '_blank');
     } catch (e) { alert("Error connecting to Gmail API"); }
   };
@@ -123,7 +124,7 @@ function App() {
   const attach = window.confirm("Do you want to attach your original PDF Resume?");
 
   try {
-    const res = await axios.post('http://127.0.0.1:8000/api/v1/actions/send-email', {
+    const res = await axios.post(`${API_URL}/api/v1/actions/send-email`, {
       user_id: user.id,
       to_email: to_email,
       subject: subject || "Smart Email Agent Draft",
@@ -145,7 +146,7 @@ function App() {
     setLoading(true);
     setChat(prev => [...prev, { role: 'user', text: message }]);
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/v1/chat/', {
+      const response = await axios.post(`${API_URL}/api/v1/chat/`, {
         user_id: user.id, message: message
       });
       setChat(prev => [...prev, { 
