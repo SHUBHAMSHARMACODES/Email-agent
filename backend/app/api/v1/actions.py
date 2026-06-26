@@ -20,11 +20,29 @@ router = APIRouter()
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
-CLIENT_SECRETS_FILE = "credentials.json"
+# Purani 2-3 lines hata kar ye naya block paste karo
 
-# Credentials config load karna
-with open(CLIENT_SECRETS_FILE, 'r') as f:
-    client_config = json.load(f)['web']
+google_creds_raw = os.getenv("GOOGLE_CREDENTIALS_JSON")
+
+if google_creds_raw:
+    # Production (Render) ke liye logic
+    try:
+        client_config = json.loads(google_creds_raw)['web']
+        print("DEBUG: Loaded Google Credentials from Env Var")
+    except Exception as e:
+        print(f"DEBUG ERROR: Failed to parse Google JSON from Env: {e}")
+        client_config = {}
+else:
+    # Local development ke liye logic
+    try:
+        with open("credentials.json", 'r') as f:
+            client_config = json.load(f)['web']
+            print("DEBUG: Loaded Google Credentials from local file")
+    except FileNotFoundError:
+        print("CRITICAL: credentials.json not found locally or in Env Var")
+        client_config = {}
+
+# Ab niche jahan 'auth_url' banta hai, usey check karein ki client_config khali toh nahi
 
 @router.get("/login-google")
 async def login_google(user_id: str):
