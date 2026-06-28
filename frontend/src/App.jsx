@@ -47,7 +47,7 @@ function App() {
   const loadFullChat = async (userId) => {
   try {
     const { data, error } = await supabase
-      .table('chat_messages')
+      .from('chat_messages')
       .select('*') // Role, Content, Created_at sab le aao
       .eq('user_id', userId)
       .order('created_at', { ascending: true });
@@ -66,24 +66,41 @@ useEffect(() => {
 }, [user]);
 
 const checkOnboardingStatus = async (userId) => {
+  console.log("Onboarding check shuru ho raha hai for:", userId);
+  
   try {
-    // .maybeSingle() use karne se error nahi aata agar row missing ho
-    const { data: profile } = await supabase.table('profiles').select('gmail_token').eq('id', userId).maybeSingle();
-    const { data: resume } = await supabase.table('resumes').select('id').eq('user_id', userId).maybeSingle();
+    // 1. Gmail Token check karo
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('gmail_token')
+      .eq('id', userId)
+      .maybeSingle();
 
-    // Agar Gmail link nahi hai YA resume upload nahi hai, toh popup dikhao
-    if (!profile?.gmail_token || !resume) {
-      setTimeout(() => setShowOnboarding(true), 1500);
+    // 2. Resume check karo (Sirf list mangao, count dekho)
+    const { data: resumes } = await supabase
+      .from('resumes')
+      .select('id')
+      .eq('user_id', userId);
+
+    console.log("Profile data mila:", profile);
+    console.log("Resumes list mili:", resumes);
+
+    // Agar token nahi hai YA resume ki list khali hai
+    if (!profile?.gmail_token || !resumes || resumes.length === 0) {
+      console.log("Popup trigger ho raha hai...");
+      setTimeout(() => {
+        setShowOnboarding(true);
+      }, 2000); // 2 second ka delay taaki page load ho jaye
     }
   } catch (error) {
-    console.error("Onboarding check failed:", error);
+    console.error("Onboarding crash:", error);
   }
 };
   // --- FETCH SIDEBAR HISTORY ---
   const fetchSidebarHistory = async (userId) => {
     try {
       const { data, error } = await supabase
-        .table('chat_messages')
+        .from('chat_messages')
         .select('content')
         .eq('user_id', userId)
         .eq('role', 'user')
@@ -341,8 +358,8 @@ const checkOnboardingStatus = async (userId) => {
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
         className="bg-[#111] border border-white/10 p-8 rounded-[2.5rem] max-w-md w-full shadow-2xl shadow-blue-500/10 text-center"
       >
-        <div className="flex justify-center mb-6 text-yellow-500">
-          <Sparkles size={48} />
+        <div className="flex justify-center mb-6 text-blue-500">
+          <Bot size={48} />
         </div>
         <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Complete Your Setup</h2>
         <p className="text-neutral-400 text-sm mb-8 leading-relaxed">
