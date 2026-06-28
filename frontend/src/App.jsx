@@ -228,7 +228,7 @@ const checkOnboardingStatus = async (userId) => {
                   <li>Enter your <span className="text-white">Email and Password </span>First.</li>
                   
                   <li>Click <span className="text-white">Create an account</span>.</li>
-                   <li>Now try to<span className="text-white">Sign In</span>.</li>
+                   <li>Now try to <span className="text-white">Sign In</span>.</li>
                 </ul>
               </div>
             </div>
