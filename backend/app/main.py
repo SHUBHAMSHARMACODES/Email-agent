@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import chat, profile, actions 
 import uvicorn
 
-app = FastAPI(title="AI Digital Secretary")
+app = FastAPI(title="Smart Email Agent")
 
 # --- CORS SETTINGS ---
 # Iske bina React backend se baat nahi kar payega
@@ -29,7 +29,7 @@ app.include_router(actions.router, prefix="/api/v1/actions", tags=["Actions"])
 
 @app.get("/")
 def home():
-    return {"message": "Digital Secretary Backend is Running!"}
+    return {"message": "Email Agent Backend is Running!"}
 
 if __name__ == "__main__":
     # Reload=True se code change karte hi server apne aap restart hoga

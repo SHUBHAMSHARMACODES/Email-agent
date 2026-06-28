@@ -17,7 +17,7 @@ class SecretaryAI:
         signature = profile_data.get('signature') or f"Best regards,\n{user_name}"
         
         system_instructions = f"""
-        You are an Advanced Digital Secretary. 
+        You are an Smart Email Assistant. 
         USER PROFILE: {json.dumps(profile_data)}
         RESUME: {resume_context[:1000]}
 

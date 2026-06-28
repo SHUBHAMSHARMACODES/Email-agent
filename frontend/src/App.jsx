@@ -18,6 +18,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const chatEndRef = useRef(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // 1. Auth & Initial Data Load
   useEffect(() => {
@@ -56,7 +57,28 @@ function App() {
     }
   } catch (e) { console.log(e); }
 };
+  
+// Pehle se maujood useEffect ke andar ya ek naya useEffect
+useEffect(() => {
+  if (user) {
+    checkOnboardingStatus(user.id);
+  }
+}, [user]);
 
+const checkOnboardingStatus = async (userId) => {
+  try {
+    // .maybeSingle() use karne se error nahi aata agar row missing ho
+    const { data: profile } = await supabase.table('profiles').select('gmail_token').eq('id', userId).maybeSingle();
+    const { data: resume } = await supabase.table('resumes').select('id').eq('user_id', userId).maybeSingle();
+
+    // Agar Gmail link nahi hai YA resume upload nahi hai, toh popup dikhao
+    if (!profile?.gmail_token || !resume) {
+      setTimeout(() => setShowOnboarding(true), 1500);
+    }
+  } catch (error) {
+    console.error("Onboarding check failed:", error);
+  }
+};
   // --- FETCH SIDEBAR HISTORY ---
   const fetchSidebarHistory = async (userId) => {
     try {
@@ -77,20 +99,20 @@ function App() {
   };
 
   const handleLogin = async () => {
-    if (!email || !password) return alert("Bhai, email aur password toh daalo!");
+    if (!email || !password) return alert("Enter your Email and Password first!");
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert("Login Galti: " + error.message);
+    if (error) alert("Login Error: " + error.message);
     else setUser(data.user);
   };
   
   const handleSignup = async () => {
-    if (!email || !password) return alert("Email aur password zaroori hain!");
+    if (!email || !password) return alert("Email and password are required!");
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: { data: { full_name: email.split('@')[0] } }
     });
-    if (error) alert("Signup Galti: " + error.message);
-    else alert("Account ban gaya! Sign in karke dekho.");
+    if (error) alert("Signup Error: " + error.message);
+    else alert("Account created successfully! Check your email for verification. Then Sign In.");
   };
 
   const handleLogout = () => supabase.auth.signOut();
@@ -133,11 +155,11 @@ function App() {
     });
     
     if (res.data.status === "success") {
-      alert("🚀 Email Sent with Original PDF!");
+      alert("🚀 Email Sent!");
     }
   } catch (err) {
     console.error(err);
-    alert("Error sending email. Check backend terminal.");
+    alert("Error sending email.");
   }
 };
 
@@ -163,15 +185,59 @@ function App() {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6 text-white font-sans">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-[#111] p-10 rounded-[2.5rem] border border-white/5 shadow-2xl w-full max-w-md">
-          <div className="flex justify-center mb-6"><div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-black shadow-xl shadow-white/10"><Zap size={32} fill="black" /></div></div>
+          
+          {/* Logo & Header */}
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-black shadow-xl shadow-white/10">
+              <Zap size={32} fill="black" />
+            </div>
+          </div>
           <h1 className="text-3xl font-bold text-center mb-2 tracking-tight">Smart Email Agent</h1>
           <p className="text-center text-neutral-500 mb-8 text-sm font-medium">Your Smart Email Assistant</p>
+          
+          {/* Input Fields */}
           <div className="space-y-4">
-            <input className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:bg-white/10 transition-all text-white" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-            <input className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:bg-white/10 transition-all text-white" type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
-            <button onClick={handleLogin} className="w-full bg-white text-black hover:bg-neutral-200 p-4 rounded-2xl font-bold transition-all">Sign In</button>
-            <button onClick={handleSignup} className="w-full text-neutral-400 p-4 rounded-2xl hover:text-white transition-all text-sm">Create an account</button>
+            <input 
+              className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:bg-white/10 transition-all text-white placeholder:text-neutral-600" 
+              placeholder="Enter your email" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+            />
+            <input 
+              className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:bg-white/10 transition-all text-white placeholder:text-neutral-600" 
+              type="password" 
+              placeholder="Create a password (min. 6 chars)" 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+            />
+            <button onClick={handleLogin} className="w-full bg-white text-black hover:bg-neutral-200 p-4 rounded-2xl font-bold transition-all shadow-lg active:scale-95">
+              Sign In
+            </button>
+            <button onClick={handleSignup} className="w-full text-neutral-400 p-4 rounded-2xl hover:text-white transition-all text-sm border border-white/5 hover:bg-white/5">
+              Create an account
+            </button>
           </div>
+
+          {/* User Guidance Note (Naya Section) */}
+          <div className="mt-8 pt-6 border-t border-white/5">
+            <div className="flex items-start gap-3 bg-blue-500/7 p-4 rounded-2xl border border-blue-500/10">
+              <Sparkles size={18} className="text-blue-400 shrink-0 mt-0.5" />
+              <div className="text-[12px] leading-relaxed text-neutral-400">
+                <p className="text-blue-300 font-bold mb-1 uppercase tracking-wider">How to join:</p>
+                <ul className="list-disc ml-4 space-y-1">
+                  <li>Enter your <span className="text-white">Email and Password </span>First.</li>
+                  
+                  <li>Click <span className="text-white">Create an account</span>.</li>
+                  <li>Check your <span className="text-white">Email Inbox</span> (or Spam) for a verification link.</li>
+                  <li>Once confirmed, return here and <span className="text-white">Sign In</span>.</li>
+                </ul>
+              </div>
+            </div>
+            <p className="text-[10px] text-center text-neutral-600 mt-4 italic">
+              Verification ensures your Gmail tokens and Resumes are securely stored.
+            </p>
+          </div>
+          
         </motion.div>
       </div>
     );
@@ -213,7 +279,7 @@ function App() {
       {/* Main Chat Interface */}
       <main className="flex-1 flex flex-col relative bg-[#050505]">
         <header className="p-5 border-b border-white/5 bg-[#050505]/80 backdrop-blur-md flex justify-between items-center px-10">
-            <div className="flex items-center gap-2 text-sm font-semibold text-white"><Sparkles size={16} className="text-yellow-500" /> AI Interface</div>
+            <div className="flex items-center gap-2 text-sm font-semibold text-white"><Bot size={16} className="text-blue-500" />AI Workspace</div>
             <div className="text-[11px] font-medium text-neutral-500 bg-white/5 px-4 py-2 rounded-full">Active: {user.email}</div>
         </header>
 
@@ -266,6 +332,50 @@ function App() {
             <p className="text-[10px] text-center text-neutral-700 mt-4 font-medium uppercase tracking-widest">Powered by Mistral AI v1.5</p>
           </div>
         </div>
+        {/* Onboarding Popup Modal */}
+<AnimatePresence>
+  {showOnboarding && (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        className="bg-[#111] border border-white/10 p-8 rounded-[2.5rem] max-w-md w-full shadow-2xl shadow-blue-500/10 text-center"
+      >
+        <div className="flex justify-center mb-6 text-yellow-500">
+          <Sparkles size={48} />
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Complete Your Setup</h2>
+        <p className="text-neutral-400 text-sm mb-8 leading-relaxed">
+          To unlock the full potential of your Smart Email Agent, please link your Gmail and upload your resume.
+        </p>
+
+        <div className="space-y-3">
+          {/* Link Gmail Action */}
+          <button 
+            onClick={() => { handleGoogleLogin(); setShowOnboarding(false); }}
+            className="w-full flex items-center justify-center gap-3 bg-white text-black p-4 rounded-2xl font-bold hover:bg-neutral-200 transition-all"
+          >
+            <Mail size={18} /> Link Gmail Account
+          </button>
+
+          {/* Resume Upload Action (Input trigger) */}
+          <label className="w-full flex items-center justify-center gap-3 border border-white/10 text-white p-4 rounded-2xl font-bold hover:bg-white/5 transition-all cursor-pointer">
+            <FileUp size={18} /> Upload Your Resume
+            <input type="file" className="hidden" onChange={(e) => { handleFileUpload(e); setShowOnboarding(false); }} accept=".pdf" />
+          </label>
+
+          <button 
+            onClick={() => setShowOnboarding(false)}
+            className="w-full text-neutral-600 text-xs font-medium uppercase tracking-widest pt-4 hover:text-neutral-400 transition-colors"
+          >
+            Skip for now
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  )}
+</AnimatePresence>
       </main>
     </div>
   );
