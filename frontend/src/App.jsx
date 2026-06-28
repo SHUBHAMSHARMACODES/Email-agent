@@ -112,7 +112,7 @@ const checkOnboardingStatus = async (userId) => {
       options: { data: { full_name: email.split('@')[0] } }
     });
     if (error) alert("Signup Error: " + error.message);
-    else alert("Account created successfully! Check your email for verification. Then Sign In.");
+    else alert("Account created successfully! Now you can Sign In.");
   };
 
   const handleLogout = () => supabase.auth.signOut();
@@ -228,8 +228,7 @@ const checkOnboardingStatus = async (userId) => {
                   <li>Enter your <span className="text-white">Email and Password </span>First.</li>
                   
                   <li>Click <span className="text-white">Create an account</span>.</li>
-                  <li>Check your <span className="text-white">Email Inbox</span> (or Spam) for a verification link.</li>
-                  <li>Once confirmed, return here and <span className="text-white">Sign In</span>.</li>
+                   <li>Now try to<span className="text-white">Sign In</span>.</li>
                 </ul>
               </div>
             </div>
