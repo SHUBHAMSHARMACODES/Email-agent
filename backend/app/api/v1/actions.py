@@ -21,6 +21,7 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 # Purani 2-3 lines hata kar ye naya block paste karo
+REDIRECT_URI = "https://email-agent-backend-61o1.onrender.com/api/v1/actions/callback"
 
 google_creds_raw = os.getenv("GOOGLE_CREDENTIALS_JSON")
 
@@ -46,10 +47,13 @@ else:
 
 @router.get("/login-google")
 async def login_google(user_id: str):
+    if not client_config:
+        raise HTTPException(status_code=500, detail="Google Credentials not configured")
+        
     auth_url = (
         "https://accounts.google.com/o/oauth2/v2/auth?"
         f"client_id={client_config['client_id']}&"
-        f"redirect_uri={client_config['redirect_uris'][0]}&"
+        f"redirect_uri={REDIRECT_URI}&" # <--- Fixed URI
         "response_type=code&"
         f"scope={' '.join(SCOPES)}&"
         "access_type=offline&"
@@ -62,11 +66,13 @@ async def login_google(user_id: str):
 async def callback(code: str, state: str):
     user_id = state
     token_url = "https://oauth2.googleapis.com/token"
+    
+    # Token mangne ke liye bhi wahi fixed redirect_uri chahiye
     data = {
         "code": code,
         "client_id": client_config["client_id"],
         "client_secret": client_config["client_secret"],
-        "redirect_uri": client_config["redirect_uris"][0],
+        "redirect_uri": REDIRECT_URI, # <--- Fixed URI
         "grant_type": "authorization_code",
     }
     
@@ -77,8 +83,9 @@ async def callback(code: str, state: str):
         raise HTTPException(status_code=400, detail=token_data.get("error_description"))
 
     try:
-        supabase.table("profiles").update({"gmail_token": token_data}).eq("id", user_id).execute()
-        return "Login Successful! Your Gmail is now linked. You can close this tab."
+        # Token ko database mein user ki ID par save karna
+        supabase.from_("profiles").update({"gmail_token": token_data}).eq("id", user_id).execute()
+        return "Login Successful! Your Gmail is now linked. You can close this tab and go back to the app."
     except Exception as e:
         return f"DB Error: {e}"
 
@@ -87,7 +94,7 @@ async def callback(code: str, state: str):
 async def get_history(user_id: str):
     try:
         # User ki pichli 10 unique queries uthao
-        res = supabase.table("chat_messages") \
+        res = supabase.from_("chat_messages") \
             .select("content") \
             .eq("user_id", user_id) \
             .eq("role", "user") \
@@ -111,7 +118,7 @@ async def send_email(req: EmailRequest):
     print(f"DEBUG: Attach resume flag is: {req.attach_resume}")
 
     # 1. Get Token
-    res = supabase.table("profiles").select("gmail_token").eq("id", req.user_id).execute()
+    res = supabase.from_("profiles").select("gmail_token").eq("id", req.user_id).execute()
     if not res.data or not res.data[0].get('gmail_token'):
         print("DEBUG ERROR: Gmail token not found in DB")
         raise HTTPException(status_code=401, detail="Gmail not linked")
